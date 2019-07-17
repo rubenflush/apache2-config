@@ -1,0 +1,19 @@
+{
+	"apache2": "/etc/apache2/sites-enabled/",
+	"serverAdmin": "my@e-mail.com",
+	"defaultFile": "000-default.conf",
+	"domain": "local.site",
+	"default": null,
+	"root":    "/var/www/vhosts/",
+	"httpPort": 80,
+	"httpsPort": 443,
+	"ssl": {
+		"enabled": false,
+		"certificate_file": "/etc/ssl/server.crt",
+		"key_file": "/etc/ssl/server.key"
+	},
+	"laravel": false,
+	"sites": {
+		"test": {},
+	}
+}
