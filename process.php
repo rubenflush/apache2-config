@@ -114,3 +114,11 @@ if($default = array_get($config, 'default')) {
     info('Adding default site [%s]', $default);
     copy(sprintf('%s%s.conf', $apache2, $default), sprintf('%s000-default.conf', $apache2));
 }
+
+if($postExecution = array_get($config, 'postExecution')) {
+    foreach((array) $postExecution as $command) {
+        info('Running command: %s', $command);
+        $output = shell_exec($command);
+        info('Done. Result: %s', json_encode($output));
+    }
+}

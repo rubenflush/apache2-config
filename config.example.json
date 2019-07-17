@@ -15,5 +15,8 @@
 	"laravel": false,
 	"sites": {
 		"test": {},
-	}
+	},
+	"postExecution": [
+		"service apache2 restart",
+	]
 }
