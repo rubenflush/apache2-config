@@ -74,10 +74,17 @@ foreach($config['sites'] as $name => $siteConfig) {
         'documentRoot' =>  array_get($siteConfig, 'documentRoot', sprintf('%s%s', $documentRoot, $directory)),
         'ServerAlias' => null,
         'fpm' => '',
+        'errorDocuments' => '',
     ];
 
     if($phpVersion = array_get($siteConfig, 'fpm')) {
         $siteReplacements['fpm'] = str_replace('{{ phpVersion }}', $phpVersion, $template['fpm']);
+    }
+
+    if($errorDocuments = array_get($siteConfig, 'errorDocuments', [])) {
+        $siteReplacements['errorDocuments'] = implode("\n", array_map(function($httpCode, $action) {
+            return sprintf('ErrorDocument %u %s', $httpCode, $action);
+        }, array_keys($errorDocuments), $errorDocuments));
     }
 
     if($aliasList = array_get($siteConfig, 'alias', [])) {
@@ -121,4 +128,9 @@ if($postExecution = array_get($config, 'postExecution')) {
         $output = shell_exec($command);
         info('Done. Result: %s', json_encode($output));
     }
+}
+
+info('Cleaning up files');
+foreach(array_slice(glob(sprintf('%sbackup_*', $apache2)), 0, -10) as $backup) {
+    exec(sprintf('rm -rf %s', $backup));
 }
