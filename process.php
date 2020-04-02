@@ -19,7 +19,7 @@ function array_get($array, $key, $default = null)
 
 function info(string $string, ...$replacements)
 {
-    echo sprintf("$string\n", ...$replacements);
+    echo vsprintf("$string\n", $replacements);
 }
 
 if(!is_file('config.json')) {
@@ -28,7 +28,48 @@ if(!is_file('config.json')) {
 
 $config = json_decode(file_get_contents('config.json'), true);
 if(!is_array($config)) {
-    return 'Error in config file';
+    info('Error in config file');
+    info(json_last_error_msg());
+	return;
+}
+
+if(in_array('--auto', $argv)) {
+    info('Running in auto mode');
+
+    if(!$config['root']) {
+        info('No root set');
+        exit;
+    }
+
+    // Read all available sites, listed in the root directory
+    $newSites = [];
+    foreach(glob(sprintf('%s*/', $config['root'])) as $siteDirectory) {
+        // Remove all sites which are already in config
+        $siteName = explode(DIRECTORY_SEPARATOR, trim($siteDirectory, DIRECTORY_SEPARATOR));
+        $siteName = end($siteName);
+        if(array_key_exists($siteName, $config['sites'])) {
+            continue;
+        }
+
+        // Find index.php
+        $laravel = false;
+        if(is_file(sprintf('%sindex.php', $siteDirectory))
+            || ($laravel = is_file(sprintf('%spublic/index.php', $siteDirectory)))) {
+
+            $newSites[$siteName] = [];
+            if(!$laravel) {
+                $newSites[$siteName]['laravel'] = false;
+            }
+        }
+    }
+
+    info('- Adding %u new sites [%s]', count($newSites), implode(', ', array_keys($newSites)));
+    if($newSites) {
+        $config['sites'] += $newSites;
+
+        info('- Writing new config file');
+        file_put_contents('config.json', json_encode($config, JSON_PRETTY_PRINT));
+    }
 }
 
 $apache2 = $config['apache2'];
@@ -76,6 +117,12 @@ foreach($config['sites'] as $name => $siteConfig) {
         'fpm' => '',
         'errorDocuments' => '',
     ];
+
+    if(!is_dir($siteReplacements['documentRoot'])) {
+        info(sprintf('- Document root not found for [%s]', $name));
+        info('- Skipping site...');
+        continue;
+    }
 
     if($phpVersion = array_get($siteConfig, 'fpm')) {
         $siteReplacements['fpm'] = str_replace('{{ phpVersion }}', $phpVersion, $template['fpm']);
