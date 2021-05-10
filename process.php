@@ -99,6 +99,8 @@ $template = array_map('file_get_contents', [
     'default' => 'template.conf',
     'ssl' => 'template_ssl.conf',
     'fpm' => 'fpm.conf',
+    'proxy' => 'proxy.conf',
+    'proxy_ssl' => 'proxy_ssl.conf',
 ]);
 
 foreach($config['sites'] as $name => $siteConfig) {
@@ -115,6 +117,8 @@ foreach($config['sites'] as $name => $siteConfig) {
         'documentRoot' =>  array_get($siteConfig, 'documentRoot', sprintf('%s%s', $documentRoot, $directory)),
         'ServerAlias' => null,
         'fpm' => '',
+	'proxy' => '',
+	'proxy_ssl' => '',
         'errorDocuments' => '',
     ];
 
@@ -122,6 +126,18 @@ foreach($config['sites'] as $name => $siteConfig) {
         info(sprintf('- Document root not found for [%s]', $name));
         info('- Skipping site...');
         continue;
+    }
+
+    foreach(['proxy', 'proxy_ssl'] as $proxyKey) {
+	    if($proxy = array_get($siteConfig, $proxyKey)) {
+	        $proxyExploded = explode(':', $proxy);
+	
+	        $proxyReplacements = [
+	            '{{ proxy_port }}' => end($proxyExploded),
+	        ];
+	
+	        $siteReplacements[$proxyKey] = str_replace(array_keys($proxyReplacements), $proxyReplacements, $template[$proxyKey]);
+	    }
     }
 
     if($phpVersion = array_get($siteConfig, 'fpm')) {
